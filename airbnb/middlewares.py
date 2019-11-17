@@ -92,6 +92,7 @@ class AirbnbDownloaderMiddleware(object):
 
     def __del__(self):
         self.browser.close()    # 关闭浏览器
+        pass
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -112,11 +113,12 @@ class AirbnbDownloaderMiddleware(object):
         #   installed downloader middleware will be called
 
         self.browser.get(request.url)
+        time.sleep(1)
         # request.meta['key'] 与 request.meta.get('key') 等同
         if request.meta['website'] == 'douban':
             print('搜索豆瓣')
        
-            time.sleep(2)
+            #time.sleep(2)
             if self.browser.find_elements_by_xpath('//*[@id="inp-query"]'):
                 print('---------------------------------------》找到查找输入框！')
             input = self.wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="inp-query"]')))
@@ -133,6 +135,10 @@ class AirbnbDownloaderMiddleware(object):
             print('搜索mojo')
             print(request.meta['ch_title'])
             html = self.browser.page_source
+        elif request.meta['website'] == 'cbooo':
+            print('搜索cbooo')
+            html = self.browser.page_source
+            #return html
         else:
             print('搜索未知')
             html = self.browser.page_source

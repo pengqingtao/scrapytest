@@ -1,18 +1,56 @@
 # -*- coding: utf-8 -*-
 import scrapy
 import re
+import json
 
 
 class HomesSpider(scrapy.Spider):
     name = 'homes'
     allowed_domains = ['douban.com',
-                       'doubanio.com', 'ydstatic.com', 'boxofficemojo.com', 'cbooo.cn']
+                       'doubanio.com', 'ydstatic.com', 'boxofficemojo.com', 'cbooo.cn', 'baidu.com']
     start_urls = ['https://www.douban.com/']
 
     def start_requests(self):
-        req_url = 'https://movie.douban.com'
-        keywords = input('请输入英文名！')
-        yield scrapy.Request(req_url, meta={'douban_search_keys': keywords, 'website': 'douban'}, callback=self.parse)
+        req_url = 'http://www.cbooo.cn/BoxOffice/getWeekInfoData?sdate=2019-11-04'
+        #keywords = input('请输入英文名！')
+        yield scrapy.Request(req_url, meta={'website': 'cbooo'}, callback=self.search_cbooo)
+
+    def search_cbooo(self, response):
+        # rs =  json.loads(response.body_as_unicode())
+        strjson = response.xpath('//body/text()').extract_first()
+        print(strjson)
+        
+        rs =  json.loads(strjson)
+        if rs.get('data1'):
+            m_list = rs.get('data1')
+            for m in m_list:
+                rank = m.get('MovieRank')
+                title = m.get('MovieName')
+                amount = m.get('SumWeekAmount')
+                print(rank + '.' + title + ' ' + amount +'万')
+        
+
+        '''
+        datas = response.xpath('//tbody[@id="tbcontent"]/tr')
+        m_title = ''
+        i = 0
+
+        
+        if datas:
+            for row_data in datas:
+                i += 1
+                if i<4:
+                    continue
+                cell_datas = row_data.xpath('//td[@class="one"]/a/p')
+                if cell_datas:
+                    m_title = cell_datas.xpath('string(.)').extract_first()
+                    print(str(i) + ':' + m_title)
+                else:
+                    print('找不到！')
+                
+        else:
+            print('无数据！')
+        '''
 
     def parse(self, response):
         datas = response.xpath('//div[@class="title"]')
@@ -46,10 +84,10 @@ class HomesSpider(scrapy.Spider):
             rows = datas.xpath('//tr')
             i = 0
             for row in rows:
-                if i>0:
+                if i > 0:
                     mrank = str(row.xpath('./td[1]/text()').extract_first())
                     mtitle = str(row.xpath('./td[3]/a/text()').extract_first())
                     print(mrank + ': ' + mtitle)
                 i += 1
-                if i>29:
+                if i > 29:
                     break
