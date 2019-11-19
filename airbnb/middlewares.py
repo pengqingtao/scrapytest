@@ -115,33 +115,25 @@ class AirbnbDownloaderMiddleware(object):
         self.browser.get(request.url)
         time.sleep(1)
         # request.meta['key'] 与 request.meta.get('key') 等同
-        if request.meta['website'] == 'douban':
-            print('搜索豆瓣')
-       
-            #time.sleep(2)
-            if self.browser.find_elements_by_xpath('//*[@id="inp-query"]'):
-                print('---------------------------------------》找到查找输入框！')
+        if request.meta['to_site'] == 'douban_home' and request.meta['from_site'] == 'cbooo':
+            movie = request.meta['movie']
             input = self.wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="inp-query"]')))
             input.click()
             input.clear()
-            input.send_keys(request.meta['douban_search_keys'])
+            input.send_keys(movie['chtitle'])
             if self.browser.find_elements_by_xpath('//*[@type="submit"]'):
                 print('---------------------------------------》找到搜索按钮！')
             submit = self.wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@type="submit"]')))
             submit.click()
-            time.sleep(2)
+            time.sleep(1)
             html = self.browser.page_source
-        elif request.meta.get('website') == 'mojo':
-            print('搜索mojo')
-            print(request.meta['ch_title'])
-            html = self.browser.page_source
-        elif request.meta['website'] == 'cbooo':
-            print('搜索cbooo')
-            html = self.browser.page_source
-            #return html
+        elif request.meta['to_site'] == 'douban_detail' and request.meta['from_site'] == 'douban_home':
+            #html = self.browser.page_source
+            pass
         else:
             print('搜索未知')
-            html = self.browser.page_source
+        
+        html = self.browser.page_source
         return HtmlResponse(url=request.url, body=html, encoding='utf-8', request=request)
 
     def process_response(self, request, response, spider):

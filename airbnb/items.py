@@ -11,4 +11,10 @@ import scrapy
 class AirbnbItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
-    pass
+    boxtime = scrapy.Field()
+    region = scrapy.Field()
+    rank = scrapy.Field()
+    title = scrapy.Field()
+    chtitle = scrapy.Field()
+    gross = scrapy.Field()
+    rating = scrapy.Field()
