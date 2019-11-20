@@ -115,7 +115,7 @@ class AirbnbDownloaderMiddleware(object):
         self.browser.get(request.url)
         time.sleep(1)
         # request.meta['key'] 与 request.meta.get('key') 等同
-        if request.meta['to_site'] == 'douban_home' and request.meta['from_site'] == 'cbooo':
+        if request.meta['site_flow'] == 'cbooo-douban_home':
             movie = request.meta['movie']
             input = self.wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="inp-query"]')))
             input.click()
@@ -127,8 +127,10 @@ class AirbnbDownloaderMiddleware(object):
             submit.click()
             time.sleep(1)
             html = self.browser.page_source
-        elif request.meta['to_site'] == 'douban_detail' and request.meta['from_site'] == 'douban_home':
+        elif request.meta['site_flow'] == 'douban_home-douban_detail':
             #html = self.browser.page_source
+            pass
+        elif request.meta['site_flow'] == 'douban_detail-imdb_detail':
             pass
         else:
             print('搜索未知')
