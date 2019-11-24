@@ -10,14 +10,17 @@ from ..items import AirbnbItem
 class HomesSpider(scrapy.Spider):
     name = 'homes'
     allowed_domains = ['douban.com',
-                       'doubanio.com', 'ydstatic.com', 'boxofficemojo.com', 'cbooo.cn', 'baidu.com']
+                       'doubanio.com', 'ydstatic.com', 'boxofficemojo.com', 'cbooo.cn', 'baidu.com', 'dorama.info']
     start_urls = ['https://www.douban.com/']
 
     def start_requests(self):
-        req_url = 'http://www.cbooo.cn/BoxOffice/getWeekInfoData?sdate=2019-11-04'
+        #req_url = 'http://www.cbooo.cn/BoxOffice/getWeekInfoData?sdate=2019-11-04'
+        urls = ['http://hk.dorama.info/drama/d_box_idx.php', 'http://dorama.info/drama/d_box_idx.php']
         #keywords = input('请输入英文名！')
-        yield scrapy.Request(req_url, meta={'site_flow': 'spider-cbooo'}, callback=self.process_cbooo)
+        #yield scrapy.Request(req_url, meta={'site_flow': 'spider-cbooo'}, callback=self.process_cbooo)
         # yield scrapy.Request(req_url, meta={'website': 'check_url'}, callback=self.check_url)
+        for req_url in urls:
+            yield scrapy.Request(req_url, meta={'site_flow': 'spider-dorama'}, callback=self.process_dorama)
 
     def process_cbooo(self, response):
         #from_link = response.url
@@ -60,6 +63,14 @@ class HomesSpider(scrapy.Spider):
                                 break
 
         if site_flow == 'cbooo-douban_home':
+            #yield scrapy.Request(url=m_detail_url, meta={'site_flow': 'douban_home-douban_detail', 'movie': copy.deepcopy(movie)}, callback=self.process_douban_detail, dont_filter=True)
+            pass
+        else:
+            ch = re.findall(r'[\u4e00-\u9fff]+', m_title)   # 提取电影中文名
+            if len(ch) > 0:
+                m_title = ch[0]
+                # print(ch[0])
+            movie['chtitle'] = m_title
             yield scrapy.Request(url=m_detail_url, meta={'site_flow': 'douban_home-douban_detail', 'movie': copy.deepcopy(movie)}, callback=self.process_douban_detail, dont_filter=True)
 
         # print(m_title)
@@ -112,6 +123,39 @@ class HomesSpider(scrapy.Spider):
     def check_url(self, response):
         from_link = response.url
         print('=======================>网页地址：' + from_link)
+
+    def process_dorama(self, response):
+        #datas = response.xpath('//td[@class="th_g"]/text()').extract_first()
+        datas = response.xpath('//table[@class="table2_g" and @width="100%"]')
+        if datas:
+            print('========================================================>有数据！')
+            #i = 1
+            table_data = datas[0]
+            #for table_data in datas:
+            
+            tds = table_data.xpath('//td[@class="td2_g" and @height="40"]')
+            i = 1
+            for td in tds:
+                movie = AirbnbItem()
+                movie['region'] = 'CNHK'
+                if response.url == 'http://dorama.info/drama/d_box_idx.php':
+                    movie['region'] = 'JP'
+                movie['rank'] = str(i)
+                #movie['chtitle'] = ''
+                movie['chtitle'] = td.xpath('./a/text()')[0].extract()
+                #print(links[0].extract())
+                print('========================================================>地区：' + movie['region'] + ' 排名：' + movie['rank'] + ' 片名：' + movie['chtitle'])
+                douban_home_url = 'https://movie.douban.com'
+                yield scrapy.Request(douban_home_url,meta={'site_flow': 'dorama-douban_home', 'movie': movie}, callback=self.process_doban_home,dont_filter=True)
+
+                i += 1
+                if i==11:
+                    break
+                
+                
+        else:
+            print('========================================================>无数据！')
+        pass
 
     def parse(self, response):
         pass

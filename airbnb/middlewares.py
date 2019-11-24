@@ -72,7 +72,7 @@ class AirbnbDownloaderMiddleware(object):
 
     def __init__(self):
         
-        self.timeout = 10
+        self.timeout = 5
         
         chrome_options = Options()
         chrome_options.add_argument('--headless')  # 使用无头谷歌浏览器模式
@@ -114,29 +114,60 @@ class AirbnbDownloaderMiddleware(object):
 
         self.browser.get(request.url)
         time.sleep(1)
+        html = self.browser.page_source
         # request.meta['key'] 与 request.meta.get('key') 等同
-        if request.meta['site_flow'] == 'cbooo-douban_home':
+        if request.meta['site_flow'] == 'cbooo-douban_home' or request.meta['site_flow'] == 'dorama-douban_home':
+            print('===============================================>processing cbooo,dorama-->douban_home')
             movie = request.meta['movie']
-            input = self.wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="inp-query"]')))
-            input.click()
-            input.clear()
-            input.send_keys(movie['chtitle'])
-            if self.browser.find_elements_by_xpath('//*[@type="submit"]'):
+            if self.check_element(By.XPATH, '//*[@id="inp-query"]', 'located'):
+                input = self.browser.find_element_by_xpath('//*[@id="inp-query"]')
+                #input = self.wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="inp-query"]')))
+                input.click()
+                input.clear()
+                input.send_keys(movie['chtitle'])
+            if self.check_element(By.XPATH, '//*[@type="submit"]', 'clickable'):
+            #if self.browser.find_elements_by_xpath('//*[@type="submit"]'):
                 print('---------------------------------------》找到搜索按钮！')
-            submit = self.wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@type="submit"]')))
-            submit.click()
-            time.sleep(1)
+                #submit = self.wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@type="submit"]')))
+                submit = self.browser.find_element_by_xpath('//*[@type="submit"]')
+                submit.click()
+                time.sleep(1)
             html = self.browser.page_source
         elif request.meta['site_flow'] == 'douban_home-douban_detail':
             #html = self.browser.page_source
             pass
         elif request.meta['site_flow'] == 'douban_detail-imdb_detail':
             pass
+        elif request.meta['site_flow'] == 'spider-dorama':
+            print('===============================================>processing spider-dorama')
+            time.sleep(3)
+            if self.check_element(By.XPATH,'//table[@class="table_g"]//td[@width="120"]/a', 'located'):
+                link = self.browser.find_element_by_xpath('//table[@class="table_g"]//td[@width="120"]/a')
+                link.click()
+                time.sleep(3)
+                html = self.browser.page_source
+            else:
+                print('===============================================>找不到链接！')
         else:
             print('搜索未知')
         
-        html = self.browser.page_source
+        #html = self.browser.page_source
         return HtmlResponse(url=request.url, body=html, encoding='utf-8', request=request)
+    
+    def check_element(self, by_method, element_key, element_type):
+        '''
+        检查是否存在某个元素
+        '''
+        flag = True
+        try:
+            if element_type == 'located':
+                self.wait.until(EC.presence_of_element_located((by_method, element_key)))
+            else:
+                self.wait.until(EC.element_to_be_clickable((by_method, element_key)))
+            return flag
+        except:
+            flag = False
+            return flag
 
     def process_response(self, request, response, spider):
         # Called with the response returned from the downloader.
