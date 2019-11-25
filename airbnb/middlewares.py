@@ -140,7 +140,7 @@ class AirbnbDownloaderMiddleware(object):
             pass
         elif request.meta['site_flow'] == 'spider-dorama':
             print('===============================================>processing spider-dorama')
-            time.sleep(3)
+            #time.sleep(3)
             if self.check_element(By.XPATH,'//table[@class="table_g"]//td[@width="120"]/a', 'located'):
                 link = self.browser.find_element_by_xpath('//table[@class="table_g"]//td[@width="120"]/a')
                 link.click()

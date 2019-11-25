@@ -141,10 +141,11 @@ class HomesSpider(scrapy.Spider):
                 if response.url == 'http://dorama.info/drama/d_box_idx.php':
                     movie['region'] = 'JP'
                 movie['rank'] = str(i)
-                #movie['chtitle'] = ''
+                movie['title'] = ''
+                movie['rating'] = ''
                 movie['chtitle'] = td.xpath('./a/text()')[0].extract()
                 #print(links[0].extract())
-                print('========================================================>地区：' + movie['region'] + ' 排名：' + movie['rank'] + ' 片名：' + movie['chtitle'])
+                #print('========================================================>地区：' + movie['region'] + ' 排名：' + movie['rank'] + ' 片名：' + movie['chtitle'])
                 douban_home_url = 'https://movie.douban.com'
                 yield scrapy.Request(douban_home_url,meta={'site_flow': 'dorama-douban_home', 'movie': movie}, callback=self.process_doban_home,dont_filter=True)
 
