@@ -15,9 +15,10 @@ class HomesSpider(scrapy.Spider):
 
     def start_requests(self):
         #req_url = 'http://www.cbooo.cn/BoxOffice/getWeekInfoData?sdate=2019-11-04'
-        urls = ['http://hk.dorama.info/drama/d_box_idx.php', 'http://dorama.info/drama/d_box_idx.php']
+        urls = ['http://hk.dorama.info/drama/d_box_idx.php',
+                'http://dorama.info/drama/d_box_idx.php']
         #keywords = input('请输入英文名！')
-        #yield scrapy.Request(req_url, meta={'site_flow': 'spider-cbooo'}, callback=self.process_cbooo)
+        # yield scrapy.Request(req_url, meta={'site_flow': 'spider-cbooo'}, callback=self.process_cbooo)
         # yield scrapy.Request(req_url, meta={'website': 'check_url'}, callback=self.check_url)
         for req_url in urls:
             yield scrapy.Request(req_url, meta={'site_flow': 'spider-dorama'}, callback=self.process_dorama)
@@ -59,11 +60,12 @@ class HomesSpider(scrapy.Spider):
                                     './a/text()').extract_first()
                                 m_detail_url = data.xpath(
                                     './a/@href').extract_first()
-                                print(m_title + '============================================>' + m_detail_url)
+                                print(
+                                    m_title + '============================================>' + m_detail_url)
                                 break
 
         if site_flow == 'cbooo-douban_home':
-            #yield scrapy.Request(url=m_detail_url, meta={'site_flow': 'douban_home-douban_detail', 'movie': copy.deepcopy(movie)}, callback=self.process_douban_detail, dont_filter=True)
+            # yield scrapy.Request(url=m_detail_url, meta={'site_flow': 'douban_home-douban_detail', 'movie': copy.deepcopy(movie)}, callback=self.process_douban_detail, dont_filter=True)
             pass
         else:
             ch = re.findall(r'[\u4e00-\u9fff]+', m_title)   # 提取电影中文名
@@ -91,7 +93,7 @@ class HomesSpider(scrapy.Spider):
         datas = response.xpath('//div[@id="info"]//a[@rel="nofollow"]')
         if datas:
             imdb_url = datas.pop().xpath('./@href').extract_first()
-            #print('============================>' +
+            # print('============================>' +
             #      movie['chtitle'] + '找到IMDB链接！' + imdb_url)
             yield scrapy.Request(url=imdb_url, meta={'site_flow': 'douban_detail-imdb_detail', 'movie': copy.deepcopy(movie)}, callback=self.process_imdb_detail, dont_filter=True)
         else:
@@ -103,10 +105,11 @@ class HomesSpider(scrapy.Spider):
         movie = response.meta['movie']
         m_en_title = '无英文片名'
         m_rating = '暂无评分'
-        
+
         datas = response.xpath('//div[@class="title_wrapper"]')
         if datas:
-            m_en_title = str(datas[0].xpath('//h1/text()').extract_first()).strip()
+            m_en_title = str(datas[0].xpath(
+                '//h1/text()').extract_first()).strip()
             #m_en_title = m_en_title[:-6]
             movie['title'] = m_en_title
             #print('============================>【' + movie['chtitle'] + '】的英文片名是' + movie['title'])
@@ -118,7 +121,8 @@ class HomesSpider(scrapy.Spider):
         if datas:
             m_rating = str(datas[0].xpath('./text()').extract_first())
             movie['rating'] = m_rating
-        print('============================>【' + movie['chtitle'] + '】的英文片名是：【' + movie['title'] +'】 IMDB评分是：' + movie['rating'])
+        print('============================>【' +
+              movie['chtitle'] + '】的英文片名是：【' + movie['title'] + '】 IMDB评分是：' + movie['rating'])
 
     def check_url(self, response):
         from_link = response.url
@@ -126,37 +130,44 @@ class HomesSpider(scrapy.Spider):
 
     def process_dorama(self, response):
         #datas = response.xpath('//td[@class="th_g"]/text()').extract_first()
-        datas = response.xpath('//table[@class="table2_g" and @width="100%"]')
+        datas = response.xpath(
+            '//table[@class="table_g" and @width="99%"]/tbody/tr')  # tr集合
         if datas:
             print('========================================================>有数据！')
-            #i = 1
-            table_data = datas[0]
-            #for table_data in datas:
-            
-            tds = table_data.xpath('//td[@class="td2_g" and @height="40"]')
-            i = 1
-            for td in tds:
-                movie = AirbnbItem()
-                movie['region'] = 'CNHK'
-                if response.url == 'http://dorama.info/drama/d_box_idx.php':
-                    movie['region'] = 'JP'
-                movie['rank'] = str(i)
-                movie['title'] = ''
-                movie['rating'] = ''
-                movie['chtitle'] = td.xpath('./a/text()')[0].extract()
-                #print(links[0].extract())
-                #print('========================================================>地区：' + movie['region'] + ' 排名：' + movie['rank'] + ' 片名：' + movie['chtitle'])
-                douban_home_url = 'https://movie.douban.com'
-                yield scrapy.Request(douban_home_url,meta={'site_flow': 'dorama-douban_home', 'movie': movie}, callback=self.process_doban_home,dont_filter=True)
+            #print(len(datas))
+            i = 0
+            for row_data in datas:
+                #print('开始执行循环')
+                j = 0 # 标记有数据的行
+                if i > 0:  # 第一行是表头，跳过
+                    movie = AirbnbItem()
+                    #print('======================================>第' + str(i) + '行')
+                    cell_datas = row_data.xpath('./td')
+                    
+                    if len(cell_datas)>7:
+                        if cell_datas[0] and str(cell_datas[0].xpath('./font/text()').extract_first()) != 'None' and str(cell_datas[0].xpath('./font/text()').extract_first()) != '*':
+                            chtitle = str(cell_datas[9].xpath('./table/tbody/tr/td/a')[0].xpath('string(.)').extract_first())
+                            end_index = chtitle.find('\n')
+                            if end_index != -1:
+                                print('找到换行符')
+                                chtitle = chtitle[0:end_index].strip()
+                            else:
+                                print('找不到换行符')
+                                chtitle.strip()
+                            #chtitle = links[0].xpath('./text()').extract_first()
+                            print('排行' + str(cell_datas[0].xpath('./font/text()').extract_first()) + '-----')
+                            print(cell_datas[6].xpath('./text()').extract_first())
+                            print(chtitle)
 
+                            rank = int(cell_datas[0].xpath('./font/text()').extract_first())
+                            if rank == 10:
+                                break                       
                 i += 1
-                if i==11:
-                    break
                 
-                
+
+
         else:
             print('========================================================>无数据！')
-        pass
 
     def parse(self, response):
         pass

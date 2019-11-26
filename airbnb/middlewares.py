@@ -146,6 +146,7 @@ class AirbnbDownloaderMiddleware(object):
                 link.click()
                 time.sleep(3)
                 html = self.browser.page_source
+                print('===============================================>跳转到相应链接！')
             else:
                 print('===============================================>找不到链接！')
         else:
